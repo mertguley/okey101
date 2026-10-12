@@ -1,0 +1,87 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>101 Okey</title>
+<style>
+body{margin:0;background:#0b5d3b;color:#fff;font:14px system-ui,sans-serif}
+#A{max-width:1100px;margin:auto;padding:10px}
+button,select,input{font:inherit;padding:6px 10px;border-radius:6px;border:0}
+button{background:#f0b429;cursor:pointer;margin:2px}button:disabled{opacity:.4}
+.t{display:inline-block;width:34px;height:48px;line-height:48px;text-align:center;background:#f5ecd2;border-radius:5px;font:700 20px system-ui;box-shadow:0 2px 0 #b9ad88;color:#000}
+.c0{color:#d62828}.c2{color:#1d4ed8}.c3{color:#e08a00}.w{outline:3px solid gold}
+.sl{display:inline-block;width:38px;height:52px;margin:1px;border:1px dashed #ffffff30;border-radius:6px;text-align:center;padding-top:2px;box-sizing:border-box}
+.sel .t{transform:translateY(-8px)}.pg .t{opacity:.35}
+.box{background:#0003;border-radius:10px;padding:8px;margin:6px 0}
+.me{outline:2px solid #f0b429}.grp{display:inline-block;margin:3px;padding:3px;background:#0004;border-radius:6px;cursor:pointer}
+.grp .t{width:26px;height:36px;line-height:36px;font-size:15px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+#msg{color:#ffd166;min-height:18px;text-align:center}
+</style></head><body><div id="A"></div>
+<script>
+const A=document.getElementById('A'),P=localStorage.p||(localStorage.p=Math.random().toString(36).slice(2)+Date.now().toString(36)),R=new URLSearchParams(location.search).get('r');
+let S=null,slots=Array(28).fill(null),sel=new Set(),pend=[],drag=null,msg='',rk=0,nm=localStorage.n||'',rt=0,lw=0,snd=localStorage.s!='0';
+const CN=['Kırmızı','Siyah','Mavi','Sarı'];
+async function api(t,x={}){const r=await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({t,r:R,p:P,...x})});const j=await r.json();msg=j.err||'';if(!j.err){sel.clear()}draw();return j}
+const E=t=>t.f?{c:S.g.o.c,n:S.g.o.n,w:0}:{c:t.c,n:t.n,w:+(t.c==S.g.o.c&&t.n==S.g.o.n)};
+const tl=(t,x='')=>t?`<div class="t c${t.c} ${S.g&&E(t).w?'w':''} ${x}">${t.f?'✦':t.n}</div>`:'';
+if(R){const ev=new EventSource(`/ev?r=${R}&p=${P}`);ev.onmessage=e=>{const old=S;S=JSON.parse(e.data);rt=Date.now();msg='';sync();
+ if(S.g&&!S.g.over&&S.g.turn==S.seat&&(!old||!old.g||old.g.turn!=S.seat||old.g.rk!=S.g.rk))beep(660,.12,2);
+ if(S.chat&&old&&old.chat&&S.chat.length>old.chat.length&&S.chat[S.chat.length-1].s!=S.seat)beep(900,.08);draw()}}
+function sync(){const g=S.g;if(!g)return;if(g.rk!=rk){rk=g.rk;slots=Array(28).fill(null);sel.clear();pend=[]}
+ const h=g.hand.map(t=>t.id);slots=slots.map(x=>h.includes(x)?x:null);h.filter(i=>!slots.includes(i)).forEach(i=>slots[slots.indexOf(null)]=i);
+ sel=new Set([...sel].filter(i=>h.includes(i)));pend=pend.map(a=>a.filter(i=>h.includes(i))).filter(a=>a.length)}
+function build(h,order){let p=h.filter(t=>!E(t).w),G=[];
+ const runs=()=>{for(let c=0;c<4;c++){const a=p.filter(t=>E(t).c==c),ns=[...new Set(a.map(t=>E(t).n))].sort((x,y)=>x-y);let i=0;
+  while(i<ns.length){let j=i;while(j+1<ns.length&&ns[j+1]==ns[j]+1)j++;
+   if(j-i>=2){const g=[];for(let k=i;k<=j;k++)g.push(a.find(x=>E(x).n==ns[k]&&p.includes(x)));G.push(g);p=p.filter(t=>!g.includes(t))}i=j+1}}};
+ const sets=()=>{for(let n=1;n<=13;n++){const a=[];for(let c=0;c<4;c++){const t=p.find(x=>E(x).n==n&&E(x).c==c);t&&a.push(t)}if(a.length>=3){G.push(a);p=p.filter(t=>!a.includes(t))}}};
+ order?(sets(),runs()):(runs(),sets());return{G,p}}
+function arrange(mode){const h=S.g.hand,w=h.filter(t=>E(t).w);let G,p;
+ if(mode=='seri'){const a=build(h,0),b=build(h,1);const r=a.G.flat().length>=b.G.flat().length?a:b;G=r.G;p=r.p}
+ else{p=h.filter(t=>!E(t).w);G=[];const m={};p.forEach(t=>(m[E(t).c+'-'+E(t).n]=m[E(t).c+'-'+E(t).n]||[]).push(t));
+  for(const k in m)while(m[k].length>=2){const pr=m[k].splice(0,2);G.push(pr);p=p.filter(t=>!pr.includes(t))}}
+ p.sort((x,y)=>E(x).c-E(y).c||E(x).n-E(y).n);let it=[];G.forEach(g=>it.push(...g.map(t=>t.id),null));it.push(...p.map(t=>t.id),...w.map(t=>t.id));
+ if(it.length>28)it=it.filter(x=>x!=null);slots=it.concat(Array(28).fill(null)).slice(0,28);sel.clear();draw()}
+function home(){A.innerHTML=`<h1>101 Okey</h1><div class=box>Adın: <input id=nm value="${nm}"> <button onclick="mk()">Masa Kur</button></div><div id=msg>${msg}</div>`}
+async function mk(){nm=document.getElementById('nm').value||'Oyuncu';localStorage.n=nm;const j=await api('new');if(j.id){await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({t:'join',r:j.id,p:P,name:nm})});location.href='?r='+j.id}}
+function opts(){const o=S.opts,ro=S.seat!=S.hostSeat||(S.g&&!S.g.over)?'disabled':'';
+ return `<div class=box><div class=row>
+ <select ${ro} onchange="setO()" id=o1><option value=0 ${o.pair?'':'selected'}>Tekli</option><option value=1 ${o.pair?'selected':''}>Eşli (0-2 ve 1-3)</option></select>
+ <select ${ro} onchange="setO()" id=o2><option value=0 ${o.katla?'':'selected'}>Katlamasız</option><option value=1 ${o.katla?'selected':''}>Katlamalı</option></select>
+ <select ${ro} onchange="setO()" id=o3><option value=1 ${o.ceza?'selected':''}>İşlek taş cezası: Açık (+101)</option><option value=0 ${o.ceza?'':'selected'}>İşlek taş cezası: Kapalı</option></select>
+ <select ${ro} onchange="setO()" id=o4>${[0,1,2,3].map(n=>`<option value=${n} ${o.bots==n?'selected':''}>Bot: ${n}</option>`).join('')}</select>
+ <select ${ro} onchange="setO()" id=o5>${[[0,'Süresiz'],[30,'30 sn'],[45,'45 sn'],[60,'60 sn']].map(([v,l])=>`<option value=${v} ${o.sure==v?'selected':''}>Hamle süresi: ${l}</option>`).join('')}</select></div></div>`}
+function setO(){api('opts',{o:{pair:+o1.value,katla:+o2.value,ceza:+o3.value,bots:+o4.value,sure:+o5.value}})}
+function copy(){navigator.clipboard.writeText(location.href);msg='Link kopyalandı, arkadaşlarına gönder!';draw()}
+function score(){const s=S.scores,n=S.names;return S.opts.pair?`<b>Takım A</b> (${n[0]||'-'}+${n[2]||'-'}): ${s[0]+s[2]} &nbsp; <b>Takım B</b> (${n[1]||'-'}+${n[3]||'-'}): ${s[1]+s[3]}`:n.map((x,i)=>`${x||'-'}: <b>${s[i]}</b>`).join(' &nbsp; ')}
+function draw0(){
+ if(!R)return home();if(!S)return A.innerHTML='Bağlanıyor…';if(S.err)return A.innerHTML=`<div class=box>${S.err}</div>`;
+ const me=S.seat,g=S.g,top=`<div class=box><div class=row><input readonly size=36 value="${location.href}"><button onclick="copy()">Linki Kopyala</button><button onclick="snd=!snd;localStorage.s=+snd;draw()">${snd?'🔔 Ses açık':'🔕 Ses kapalı'}</button><span>${score()}</span></div></div>`;
+ if(me<0){if(S.names.includes(null))return A.innerHTML=top+`<div class=box>Adın: <input id=nm value="${nm}"> <button onclick="nm=document.getElementById('nm').value||'Oyuncu';localStorage.n=nm;api('join',{name:nm})">Masaya Otur</button></div><div id=msg>${msg}</div>`;return A.innerHTML=top+'<div class=box>Masa dolu.</div>'}
+ const lobby=`<div class=box><div class=row>${S.names.map((n,i)=>`<span class=box>${i+1}. ${dot(i)} ${n||'(boş)'}${i==S.hostSeat?' 👑':''}</span>`).join('')}</div></div>${opts()}${chat()}`;
+ if(!g)return A.innerHTML=top+lobby+`<div class=row><button ${me==S.hostSeat&&!S.names.includes(null)?'':'disabled'} onclick="api('start')">Oyunu Başlat</button></div><div id=msg>${msg||(me==S.hostSeat?'4 oyuncu oturunca başlat.':'Kurucunun başlatması bekleniyor…')}</div>`;
+ const my=g.turn==me&&!g.over,pos=['Ben','Sağdaki','Karşıdaki','Soldaki'];
+ let h=top+`<div class=row>`;
+ for(const rel of[3,2,1]){const i=(me+rel)%4;h+=`<div class="box ${g.turn==i?'me':''}">${pos[rel]}: ${dot(i)} <b>${S.names[i]}</b> (${g.n[i]} taş)${g.opened[i]?' ✅açtı':''}<br>Attığı: ${tl(g.disc[i])||'—'}</div>`}
+ h+=`</div><div class="box row"><div>Gösterge ${tl(g.gos)}</div><div>Okey: <b>${CN[g.o.c]} ${g.o.n}</b></div><div>Kalan: <b>${g.deck}</b></div><div><b>${g.over?'El bitti':g.turn==me?'SIRA SENDE ('+(g.phase=='draw'?'taş çek':'at/aç/işle')+')':'Sıra: '+S.names[g.turn]}</b></div>${g.tl!=null&&!g.over?'<div>⏱ <b id=cd></b></div>':''}</div>`;
+ h+=`<div class=box>Masadaki açılanlar (işlemek için 1 taş seç, sonra gruba tıkla):<br>${g.table.map((x,i)=>`<span class=grp onclick="addT(${i})" title="${S.names[x.o]}">${x.t.map(t=>tl(t)).join('')}</span>`).join('')||'<i>Henüz yok</i>'}</div>`;
+ h+=`<div class=box>`+[0,14].map(r=>`<div>${slots.slice(r,r+14).map((id,k)=>{const i=r+k,t=id!=null&&g.hand.find(x=>x.id==id),p=pend.some(a=>a.includes(id));
+  return `<span class="sl ${sel.has(id)?'sel':''} ${p?'pg':''}" ondragover="event.preventDefault()" ondrop="slots[drag]!=null&&([slots[drag],slots[${i}]]=[slots[${i}],slots[drag]]);draw()">${t?`<span draggable=true ondragstart="drag=${i}" onclick="tg(${id})">${tl(t)}</span>`:''}</span>`}).join('')}</div>`).join('')+`</div>`;
+ h+=`<div class=row><button onclick="arrange('seri')">Seri Diz</button><button onclick="arrange('cift')">Çift Diz</button>
+ <button ${my&&g.phase=='draw'?'':'disabled'} onclick="api('drawDeck')">Desten Çek</button>
+ <button ${my&&g.phase=='draw'&&g.disc[(me+3)%4]?'':'disabled'} onclick="api('drawDisc')">Atılanı Al (${S.names[(me+3)%4]})</button>
+ <button ${my&&g.phase=='play'&&sel.size>=2?'':'disabled'} onclick="pend.push([...sel]);sel.clear();draw()">Seçileni Grup Yap</button>
+ <button ${my&&g.phase=='play'&&pend.length?'':'disabled'} onclick="api('open',{gr:pend}).then(j=>{if(!j.err)pend=[];draw()})">Eli Aç (${pend.length} grup)</button>
+ <button ${pend.length?'':'disabled'} onclick="pend=[];draw()">Grupları Sıfırla</button>
+ <button ${my&&g.phase=='play'&&sel.size==1?'':'disabled'} onclick="api('discard',{tile:[...sel][0]})">Seçili Taşı At</button></div><div id=msg>${msg}</div>`;
+ h+=`<div class=box>${S.log.join('<br>')}</div>${chat()}`;
+ if(g.over)h+=`<div class=box><b>Sonuç:</b> ${g.over.w==null?'Berabere':S.names[g.over.w]+' bitirdi'}${g.over.dbl?' — OKEYLE, çift puan!':''}<br>${S.names.map((n,i)=>n+': '+(g.over.d[i]>0?'+':'')+g.over.d[i]).join(' | ')}<br>${opts()}<button ${me==S.hostSeat?'':'disabled'} onclick="api('start')">Yeni El</button></div>`;
+ A.innerHTML=h}
+function tg(id){if(pend.some(a=>a.includes(id)))return;sel.has(id)?sel.delete(id):sel.add(id);draw()}
+function addT(i){if(sel.size==1)api('add',{tile:[...sel][0],gi:i})}
+const dot=i=>S.names[i]?(S.on[i]?'🟢':'🔴'):'',esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const chat=()=>`<div class=box><div id=cb style="max-height:110px;overflow:auto">${S.chat.map(c=>`<div><b>${esc(c.n)}:</b> ${esc(c.m)}</div>`).join('')}</div><input id=ci placeholder="Mesaj yaz, Enter ile gönder" style="width:65%" onkeydown="if(event.key=='Enter')sc()"> <button onclick="sc()">Gönder</button></div>`;
+function sc(){const i=document.getElementById('ci');if(i.value.trim()){fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({t:'chat',r:R,p:P,m:i.value})});i.value=''}}
+function draw(){const i=document.getElementById('ci'),v=i?i.value:'',f=i&&document.activeElement==i;draw0();const n=document.getElementById('ci');if(n){n.value=v;f&&n.focus();const b=document.getElementById('cb');b.scrollTop=b.scrollHeight}}
+let AC;function beep(f,d,n=1){if(!snd)return;try{AC=AC||new AudioContext();for(let i=0;i<n;i++){const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+i*d*1.3;o.frequency.value=f*(1+i*.25);g.gain.value=.08;o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}}catch(e){}}
+setInterval(()=>{const g=S&&S.g;if(!g||g.tl==null||g.over)return;const da=rt+g.tl,l=Math.max(0,Math.ceil((da-Date.now())/1000)),c=document.getElementById('cd');if(c)c.textContent=l+' sn';
+ if(g.turn==S.seat&&l>0&&l<=10&&Math.abs(da-lw)>3000){lw=da;beep(1200,.2)}},250);
+draw();
+</script></body></html>
