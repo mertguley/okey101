@@ -22,20 +22,24 @@ const worst=(R,h)=>{const o=R.g.o,E=t=>eff(t,o),B=best(h,o);let c=B.p.length?B.p
  return c.reduce((m,t)=>f(t)<f(m)||(f(t)==f(m)&&E(t).n>E(m).n)?t:m)};
 // Bot oynar; süresi dolan insan için sadece çek+at yapar
 function auto(R,bot){const g=R.g,s=g.turn,p=R.seats[s].pid,o=g.o,h=()=>g.hands[s],call=x=>act({r:R.id,p,...x}),cov=x=>best(x,o).G.flat().length;
- if(g.phase=='draw'){const d=g.disc[(s+3)%4].slice(-1)[0];call({t:bot&&d&&cov([...h(),d])>cov(h())?'drawDisc':'drawDeck'});if(g.over||g.turn!=s)return}
+ if(g.side!=null)call({t:'undo'});
+ if(g.phase=='draw'){const d=g.disc[(s+3)%4].slice(-1)[0],need=R.opts.katla?Math.max(101,g.lastOpen+1):101,B2=d&&best([...h(),d],o),
+  ok=bot&&d&&!g.noSide&&(g.opened[s]?cov([...h(),d])>cov(h()):B2.G.some(x=>x.includes(d))&&B2.G.reduce((a,x)=>a+pts(x,o),0)>=need);
+  call({t:ok?'drawDisc':'drawDeck'});if(g.over||g.turn!=s)return}
  if(bot){const B=best(h(),o),need=R.opts.katla?Math.max(101,g.lastOpen+1):101;let gr=B.G.map(x=>x.map(t=>t.id));
   if(gr.flat().length>=h().length){const l=gr[gr.length-1];l&&(l.length>3?l.pop():gr.pop())}
   if(gr.length&&(g.opened[s]==1||B.G.reduce((a,x)=>a+pts(x,o),0)>=need))call({t:'open',gr});
   if(g.opened[s]==1)for(const t of h().filter(t=>!eff(t,o).w))for(let i=0;i<g.table.length;i++)if(!call({t:'add',tile:t.id,gi:i}).err)break}
+ if(g.side!=null){call({t:'undo'});call({t:'drawDeck'});if(g.over)return}
  call({t:'discard',tile:worst(R,h()).id})}
 function deal(R){const d=shuffle(mk()),gos=d.splice(d.findIndex(t=>!t.f),1)[0],st=R.dealer;
  const hands=[0,1,2,3].map(i=>d.splice(0,i==st?22:21));
- R.g={rk:++R.rn,gos,o:{c:gos.c,n:gos.n%13+1},deck:d,hands,disc:[[],[],[],[]],table:[],opened:[0,0,0,0],pen:[0,0,0,0],turn:st,phase:'play',lastOpen:0,lastPairs:0,over:null,dl:0,off:0};setDl(R);
+ R.g={rk:++R.rn,gos,o:{c:gos.c,n:gos.n%13+1},deck:d,hands,disc:[[],[],[],[]],table:[],opened:[0,0,0,0],pen:[0,0,0,0],turn:st,phase:'play',lastOpen:0,lastPairs:0,over:null,dl:0,off:0,side:null,noSide:0,sideFrom:0};setDl(R);
  R.log.push('Yeni el başladı.')}
-function endRound(R,w,dbl){const g=R.g,m=dbl?2:1,d=[0,1,2,3].map(i=>m*(g.pen[i]+(i==w?-101:!g.opened[i]?202:g.hands[i].reduce((a,t)=>a+eff(t,g.o).n,0))));
+function endRound(R,w,dbl){const g=R.g,d=[0,1,2,3].map(i=>(dbl&&g.opened[i]==2?2:1)*(g.pen[i]+(i==w?-101:!g.opened[i]?202:g.hands[i].reduce((a,t)=>a+eff(t,g.o).n,0))));
  d.forEach((x,i)=>R.scores[i]+=x);g.over={w,d,dbl};R.dealer=(R.dealer+1)%4;
- R.log.push(w==null?'Taşlar bitti, el berabere.':R.seats[w].name+(dbl?' OKEYLE bitirdi, çift puan!':' eli bitirdi!'))}
-function next(R){const g=R.g;g.turn=(g.turn+1)%4;g.phase='draw';if(!g.deck.length)endRound(R,null);else setDl(R)}
+ R.log.push(w==null?'Taşlar bitti, el berabere.':R.seats[w].name+(dbl?' OKEYLE bitirdi: çift açanların puanı 2 katı!':' eli bitirdi!'))}
+function next(R){const g=R.g;g.turn=(g.turn+1)%4;g.phase='draw';g.side=null;g.noSide=0;if(!g.deck.length)endRound(R,null);else setDl(R)}
 function act(b){
  if(b.t=='new'){const id=crypto.randomBytes(4).toString('hex');rooms[id]={id,host:b.p,seats:[null,null,null,null],opts:{pair:0,katla:0,ceza:1,bots:0,sure:60},scores:[0,0,0,0],dealer:0,rn:0,g:null,log:[],chat:[],cl:[],t:Date.now()};return{id}}
  const R=rooms[b.r];if(!R)return{err:'Masa bulunamadı'};R.t=Date.now();
@@ -52,26 +56,28 @@ function act(b){
  const h=g.hands[s],nm=R.seats[s].name;
  if(b.t=='drawDeck'||b.t=='drawDisc'){if(g.phase!='draw')return{err:'Zaten taş çektin'};
   if(b.t=='drawDeck'){if(!g.deck.length){endRound(R,null);return{}}h.push(g.deck.pop())}
-  else{const p=g.disc[(s+3)%4];if(!p.length)return{err:'Alınacak taş yok'};h.push(p.pop())}
+  else{if(g.noSide)return{err:'Taşı geri bıraktın, bu turda desteden çekmelisin'};const f=(s+3)%4,p=g.disc[f];if(!p.length)return{err:'Alınacak taş yok'};const t=p.pop();h.push(t);say(nm+' yandan taş çekti.');if(!g.opened[s]){g.side=t.id;g.sideFrom=f}}
   g.phase='play';return{}}
  if(g.phase!='play')return{err:'Önce taş çek'};
+ if(b.t=='undo'){if(g.side==null)return{err:'Geri bırakılacak taş yok'};const i=h.findIndex(t=>t.id==g.side);g.disc[g.sideFrom].push(h.splice(i,1)[0]);g.side=null;g.phase='draw';g.noSide=1;say(nm+' açamadı, taşı geri bıraktı.');return{}}
  if(b.t=='open'){const ids=(b.gr||[]).flat();if(!b.gr||!b.gr.length||new Set(ids).size!=ids.length||!ids.every(i=>h.some(t=>t.id==i)))return{err:'Geçersiz seçim'};
   if(ids.length>=h.length)return{err:'Atmak için en az 1 taş elde kalmalı'};
+  if(g.side!=null&&!g.opened[s]&&!ids.includes(g.side))return{err:'Yandan çektiğin taşı da açılışa katmalısın (ya da geri bırak)'};
   const G=b.gr.map(a=>a.map(i=>h.find(t=>t.id==i))),isP=G.every(x=>x.length==2);let tot=0;
   if(g.opened[s]==2)return{err:'Çift açtığın için seri açamazsın, taş işleyebilirsin'};
   if(!g.opened[s]&&isP){const need=R.opts.katla?Math.max(5,g.lastPairs+1):5;if(G.length<need)return{err:`Çift sayısı ${G.length}, gerekli ${need}`};if(!G.every(x=>pairOk(x,g.o)))return{err:'Geçersiz çift var'};g.lastPairs=G.length;g.opened[s]=2}
   else{const ps=G.map(x=>pts(x,g.o));if(ps.some(p=>!p))return{err:'Geçersiz seri/per var'};tot=ps.reduce((a,b)=>a+b);
    if(!g.opened[s]){const need=R.opts.katla?Math.max(101,g.lastOpen+1):101;if(tot<need)return{err:`Açılış puanı ${tot}, gerekli ${need}`};g.lastOpen=tot;g.opened[s]=1}}
-  g.hands[s]=h.filter(t=>!ids.includes(t.id));G.forEach(x=>g.table.push({o:s,t:x,pair:+(isP&&g.opened[s]==2)}));say(nm+' açtı'+(tot?` (${tot})`:' (çift)')+'.');return{}}
+  g.side=null;g.hands[s]=h.filter(t=>!ids.includes(t.id));G.forEach(x=>g.table.push({o:s,t:x,pair:+(isP&&g.opened[s]==2)}));say(nm+' açtı'+(tot?` (${tot})`:' (çift)')+'.');return{}}
  if(b.t=='add'){const gr=g.table[b.gi],t=h.find(x=>x.id==b.tile);if(!g.opened[s])return{err:'Önce elini açmalısın'};if(!gr||!t||gr.pair)return{err:'Buraya işlenemez'};
   if(h.length<2)return{err:'Atmak için en az 1 taş elde kalmalı'};if(!pts([...gr.t,t],g.o))return{err:'Bu taş buraya işlemiyor'};
-  gr.t.push(t);g.hands[s]=h.filter(x=>x!=t);return{}}
- if(b.t=='discard'){const i=h.findIndex(t=>t.id==b.tile);if(i<0)return{err:'Taş yok'};const t=h.splice(i,1)[0];
+  gr.t.push(t);g.hands[s]=h.filter(x=>x!=t);say(nm+' taş işledi.');return{}}
+ if(b.t=='discard'){if(g.side!=null)return{err:'Yandan çektiğin taşla el açmalısın; açamıyorsan taşı geri bırak'};const i=h.findIndex(t=>t.id==b.tile);if(i<0)return{err:'Taş yok'};const t=h.splice(i,1)[0];
   if(R.opts.ceza&&g.table.some(x=>!x.pair&&pts([...x.t,t],g.o))){g.pen[s]+=101;say(nm+' işlek taş attı: +101 ceza!')}
   g.disc[s].push(t);if(!h.length)endRound(R,s,eff(t,g.o).w);else next(R);return{}}
  return{err:'Bilinmeyen işlem'}}
-function view(R,s){const g=R.g,v={id:R.id,seat:s,opts:R.opts,names:R.seats.map(x=>x&&x.name),hostSeat:R.seats.findIndex(x=>x&&x.pid==R.host),scores:R.scores,log:R.log.slice(-6),on:R.seats.map(x=>x&&(x.bot||R.cl.some(c=>c.p==x.pid))),chat:R.chat.slice(-30)};
- if(g)v.g={rk:g.rk,gos:g.gos,o:g.o,deck:g.deck.length,n:g.hands.map(h=>h.length),hand:s>=0?g.hands[s]:[],disc:g.disc.map(d=>d[d.length-1]||null),table:g.table,opened:g.opened,turn:g.turn,phase:g.phase,over:g.over,tl:g.dl>1e14||R.seats[g.turn].bot?null:Math.max(0,g.dl-Date.now()),last:g.lastOpen,lastP:g.lastPairs};return v}
+function view(R,s){const g=R.g,v={id:R.id,seat:s,opts:R.opts,names:R.seats.map(x=>x&&x.name),hostSeat:R.seats.findIndex(x=>x&&x.pid==R.host),scores:R.scores,log:R.log.slice(-40),on:R.seats.map(x=>x&&(x.bot||R.cl.some(c=>c.p==x.pid))),chat:R.chat.slice(-30)};
+ if(g)v.g={rk:g.rk,gos:g.gos,o:g.o,deck:g.deck.length,n:g.hands.map(h=>h.length),hand:s>=0?g.hands[s]:[],disc:g.disc.map(d=>d[d.length-1]||null),table:g.table,opened:g.opened,turn:g.turn,phase:g.phase,over:g.over,side:g.side,noSide:g.noSide,tl:g.dl>1e14||R.seats[g.turn].bot?null:Math.max(0,g.dl-Date.now()),last:g.lastOpen,lastP:g.lastPairs};return v}
 const send=(R,c)=>c.res.write('data: '+JSON.stringify(view(R,R.seats.findIndex(x=>x&&x.pid==c.p)))+'\n\n');
 http.createServer((req,res)=>{const u=new URL(req.url,'http://x'),q=Object.fromEntries(u.searchParams);
  if(u.pathname=='/ev'){res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','X-Accel-Buffering':'no'});const R=rooms[q.r];
