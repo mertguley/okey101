@@ -4,15 +4,40 @@ body{margin:0;background:#0b5d3b;color:#fff;font:14px system-ui,sans-serif}
 #A{max-width:1100px;margin:auto;padding:10px}
 button,select,input{font:inherit;padding:6px 10px;border-radius:6px;border:0}
 button{background:#f0b429;cursor:pointer;margin:2px}button:disabled{opacity:.4}
-.t{display:inline-block;width:34px;height:48px;line-height:48px;text-align:center;background:#f5ecd2;border-radius:5px;font:700 20px system-ui;box-shadow:0 2px 0 #b9ad88;color:#000}
+:root{--w:min(44px,4.6vw)}
+.t{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:var(--w);height:calc(var(--w)*1.42);background:linear-gradient(#fbf4de,#eadfbd);border-radius:6px;font:700 calc(var(--w)*.52) system-ui;box-shadow:0 2px 0 #b9ad88,0 3px 4px #0005;color:#111}
+.t i{font-style:normal;font-size:.55em;margin-top:1px}
 .c0{color:#d62828}.c2{color:#1d4ed8}.c3{color:#e08a00}.w{outline:3px solid gold}
-.sl{display:inline-block;width:38px;height:52px;margin:1px;border:1px dashed #ffffff30;border-radius:6px;text-align:center;padding-top:2px;box-sizing:border-box}
+.sl{display:inline-flex;justify-content:center;align-items:flex-start;width:calc(var(--w) + 4px);height:calc(var(--w)*1.42 + 8px);padding-top:3px;box-sizing:border-box;border-radius:6px;background:#0003}
 .sel .t{transform:translateY(-8px)}.pg .t{opacity:.35}
 .box{background:#0003;border-radius:10px;padding:8px;margin:6px 0}
 .me{outline:2px solid #f0b429}.grp{display:inline-block;margin:3px;padding:3px;background:#0004;border-radius:6px;cursor:pointer}
-.grp .t{width:26px;height:36px;line-height:36px;font-size:15px}
+.grp{--w:26px}.grp small{display:block;font-size:10px;text-align:center}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
 #msg{color:#ffd166;min-height:18px;text-align:center}
+
+.tbl{position:relative;height:clamp(640px,calc(100vh - 130px),780px);background:radial-gradient(#0f7a4c,#0a5a38);border-radius:16px;overflow:hidden;margin:8px 0}
+.pl{position:absolute;background:#073a26;border:2px solid #1d6a49;border-radius:20px;padding:4px 14px;font-weight:700;white-space:nowrap;z-index:2}
+.pl.on{border-color:#f0b429;box-shadow:0 0 14px #f0b429aa}
+.pl.tp{top:8px;left:50%;transform:translateX(-50%)}
+.pl.l,.pl.r{top:38%;writing-mode:vertical-rl;padding:14px 5px}
+.pl.l{left:8px;transform:rotate(180deg)}.pl.r{right:8px}
+.pl.mine{position:static;display:inline-block}
+.sg{position:absolute;width:calc(var(--w)*1.5);height:calc(var(--w)*2);border:2px dashed #ffffff45;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#0002}
+.sg small{position:absolute;bottom:100%;margin-bottom:3px;font-size:11px;white-space:nowrap}
+.sg.tl{top:56px;left:80px}.sg.tr{top:56px;right:80px}.sg.bl{bottom:285px;left:80px}.sg.br{bottom:285px;right:80px}
+.t.act,.sg.act{outline:3px solid #f0b429;cursor:pointer;animation:pl 1s infinite alternate}
+@keyframes pl{to{outline-color:#fff7}}
+.ct{position:absolute;left:180px;right:180px;top:50px;bottom:280px;padding-top:34px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:8px;overflow:auto}
+.cc{display:flex;flex-direction:column;align-items:center;gap:3px}.cc small,.ct small{font-size:11px;opacity:.85}
+.t.back{position:relative}
+.bd{background:#f0b429;color:#000;border-radius:50%;width:calc(var(--w)*.72);height:calc(var(--w)*.72);display:flex;align-items:center;justify-content:center;font-size:calc(var(--w)*.3)}
+.tg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;width:100%}
+.bz{position:absolute;bottom:0;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:6px}
+.rack{background:linear-gradient(#a8703a,#80501f);border-radius:8px;padding:8px 10px 2px;border-bottom:8px solid #5a3414;box-shadow:0 6px 14px #0007}
+.rw{display:flex;margin-bottom:6px;background:#0002;border-radius:6px;padding:0 2px}
+.dz{width:62px;height:104px;background:#073a26;border:2px solid #1d6a49;border-radius:10px;color:#fff;font-weight:700;font-size:12px;line-height:1.2;padding:4px}
+.ov{position:absolute;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:5}
 </style></head><body><div id="A"></div>
 <script>
 const A=document.getElementById('A'),P=localStorage.p||(localStorage.p=Math.random().toString(36).slice(2)+Date.now().toString(36)),R=new URLSearchParams(location.search).get('r');
@@ -20,7 +45,7 @@ let S=null,slots=Array(28).fill(null),sel=new Set(),pend=[],drag=null,msg='',rk=
 const CN=['Kırmızı','Siyah','Mavi','Sarı'];
 async function api(t,x={}){const r=await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({t,r:R,p:P,...x})});const j=await r.json();msg=j.err||'';if(!j.err){sel.clear()}draw();return j}
 const E=t=>t.f?{c:S.g.o.c,n:S.g.o.n,w:0}:{c:t.c,n:t.n,w:+(t.c==S.g.o.c&&t.n==S.g.o.n)};
-const tl=(t,x='')=>t?`<div class="t c${t.c} ${S.g&&E(t).w?'w':''} ${x}">${t.f?'✦':t.n}</div>`:'';
+const tl=(t,x='')=>t?`<div class="t c${t.c} ${S.g&&E(t).w?'w':''} ${x}">${t.f?'✦':t.n+'<i>♥</i>'}</div>`:'';
 if(R){const ev=new EventSource(`/ev?r=${R}&p=${P}`);ev.onmessage=e=>{const old=S;S=JSON.parse(e.data);rt=Date.now();msg='';sync();
  if(S.g&&!S.g.over&&S.g.turn==S.seat&&(!old||!old.g||old.g.turn!=S.seat||old.g.rk!=S.g.rk))beep(660,.12,2);
  if(S.chat&&old&&old.chat&&S.chat.length>old.chat.length&&S.chat[S.chat.length-1].s!=S.seat)beep(900,.08);draw()}}
@@ -57,22 +82,19 @@ function draw0(){
  if(me<0){if(S.names.includes(null))return A.innerHTML=top+`<div class=box>Adın: <input id=nm value="${nm}"> <button onclick="nm=document.getElementById('nm').value||'Oyuncu';localStorage.n=nm;api('join',{name:nm})">Masaya Otur</button></div><div id=msg>${msg}</div>`;return A.innerHTML=top+'<div class=box>Masa dolu.</div>'}
  const lobby=`<div class=box><div class=row>${S.names.map((n,i)=>`<span class=box>${i+1}. ${dot(i)} ${n||'(boş)'}${i==S.hostSeat?' 👑':''}</span>`).join('')}</div></div>${opts()}${chat()}`;
  if(!g)return A.innerHTML=top+lobby+`<div class=row><button ${me==S.hostSeat&&!S.names.includes(null)?'':'disabled'} onclick="api('start')">Oyunu Başlat</button></div><div id=msg>${msg||(me==S.hostSeat?'4 oyuncu oturunca başlat.':'Kurucunun başlatması bekleniyor…')}</div>`;
- const my=g.turn==me&&!g.over,pos=['Ben','Sağdaki','Karşıdaki','Soldaki'];
- let h=top+`<div class=row>`;
- for(const rel of[3,2,1]){const i=(me+rel)%4;h+=`<div class="box ${g.turn==i?'me':''}">${pos[rel]}: ${dot(i)} <b>${S.names[i]}</b> (${g.n[i]} taş)${g.opened[i]?' ✅açtı':''}<br>Attığı: ${tl(g.disc[i])||'—'}</div>`}
- h+=`</div><div class="box row"><div>Gösterge ${tl(g.gos)}</div><div>Okey: <b>${CN[g.o.c]} ${g.o.n}</b></div><div>Kalan: <b>${g.deck}</b></div><div><b>${g.over?'El bitti':g.turn==me?'SIRA SENDE ('+(g.phase=='draw'?'taş çek':'at/aç/işle')+')':'Sıra: '+S.names[g.turn]}</b></div>${g.tl!=null&&!g.over?'<div>⏱ <b id=cd></b></div>':''}</div>`;
- h+=`<div class=box>Masadaki açılanlar (işlemek için 1 taş seç, sonra gruba tıkla):<br>${g.table.map((x,i)=>`<span class=grp onclick="addT(${i})" title="${S.names[x.o]}">${x.t.map(t=>tl(t)).join('')}</span>`).join('')||'<i>Henüz yok</i>'}</div>`;
- h+=`<div class=box>`+[0,14].map(r=>`<div>${slots.slice(r,r+14).map((id,k)=>{const i=r+k,t=id!=null&&g.hand.find(x=>x.id==id),p=pend.some(a=>a.includes(id));
-  return `<span class="sl ${sel.has(id)?'sel':''} ${p?'pg':''}" ondragover="event.preventDefault()" ondrop="slots[drag]!=null&&([slots[drag],slots[${i}]]=[slots[${i}],slots[drag]]);draw()">${t?`<span draggable=true ondragstart="drag=${i}" onclick="tg(${id})">${tl(t)}</span>`:''}</span>`}).join('')}</div>`).join('')+`</div>`;
- h+=`<div class=row><button onclick="arrange('seri')">Seri Diz</button><button onclick="arrange('cift')">Çift Diz</button>
- <button ${my&&g.phase=='draw'?'':'disabled'} onclick="api('drawDeck')">Desten Çek</button>
- <button ${my&&g.phase=='draw'&&g.disc[(me+3)%4]?'':'disabled'} onclick="api('drawDisc')">Atılanı Al (${S.names[(me+3)%4]})</button>
- <button ${my&&g.phase=='play'&&sel.size>=2?'':'disabled'} onclick="pend.push([...sel]);sel.clear();draw()">Seçileni Grup Yap</button>
- <button ${my&&g.phase=='play'&&pend.length?'':'disabled'} onclick="api('open',{gr:pend}).then(j=>{if(!j.err)pend=[];draw()})">Eli Aç (${pend.length} grup)</button>
- <button ${pend.length?'':'disabled'} onclick="pend=[];draw()">Grupları Sıfırla</button>
- <button ${my&&g.phase=='play'&&sel.size==1?'':'disabled'} onclick="api('discard',{tile:[...sel][0]})">Seçili Taşı At</button></div><div id=msg>${msg}</div>`;
- h+=`<div class=box>${S.log.join('<br>')}</div>${chat()}`;
- if(g.over)h+=`<div class=box><b>Sonuç:</b> ${g.over.w==null?'Berabere':S.names[g.over.w]+' bitirdi'}${g.over.dbl?' — OKEYLE, çift puan!':''}<br>${S.names.map((n,i)=>n+': '+(g.over.d[i]>0?'+':'')+g.over.d[i]).join(' | ')}<br>${opts()}<button ${me==S.hostSeat?'':'disabled'} onclick="api('start')">Yeni El</button></div>`;
+ const my=g.turn==me&&!g.over,dr=my&&g.phase=='draw',play=my&&g.phase=='play',rel=k=>(me+k)%4,pv=g.disc[rel(3)];
+ const pill=(i,c)=>`<div class="pl ${c} ${g.turn==i&&!g.over?'on':''}">${dot(i)} ${S.names[i]} · ${g.n[i]} taş${g.opened[i]?' ✅':''}</div>`;
+ const slot=(k,c,x,oc)=>`<div class="sg ${c} ${x}" ${oc?`onclick="${oc}"`:''}><small>${S.names[rel(k)]}</small>${tl(g.disc[rel(k)])}</div>`;
+ const rack=[0,14].map(r=>`<div class=rw>${slots.slice(r,r+14).map((id,k)=>{const i=r+k,t=id!=null&&g.hand.find(x=>x.id==id),p=pend.some(a=>a.includes(id));
+  return `<span class="sl ${sel.has(id)?'sel':''} ${p?'pg':''}" ondragover="event.preventDefault()" ondrop="slots[drag]!=null&&([slots[drag],slots[${i}]]=[slots[${i}],slots[drag]]);draw()">${t?`<span draggable=true ondragstart="drag=${i}" onclick="tg(${id})">${tl(t)}</span>`:''}</span>`}).join('')}</div>`).join('');
+ const groups=g.table.map((x,i)=>`<span class=grp onclick="addT(${i})"><small>${S.names[x.o]}</small>${x.t.map(t=>tl(t)).join('')}</span>`).join('');
+ const st=g.over?'El bitti':my?(dr?'Sıra sende: desten veya soldan taş çek':'Sıra sende: aç, işle veya taş at'):'Sıra: '+S.names[g.turn];
+ const ov=g.over?`<div class=ov><div class=box style="max-width:540px;text-align:center"><b>Sonuç:</b> ${g.over.w==null?'Berabere':S.names[g.over.w]+' bitirdi'}${g.over.dbl?' — OKEYLE, çift puan!':''}<br>${S.names.map((n,i)=>n+': '+(g.over.d[i]>0?'+':'')+g.over.d[i]).join(' | ')}<br>${opts()}<button ${me==S.hostSeat?'':'disabled'} onclick="api('start')">Yeni El</button></div></div>`:'';
+ const center=`<div class=ct><div class=row style="gap:26px;align-items:flex-end"><div class=cc>${tl(g.gos)}<small>Gösterge</small></div><div class=cc><div class="t back ${dr?'act':''}" ${dr?`onclick="api('drawDeck')"`:''}><b class=bd>${g.deck}</b></div><small>Deste</small></div></div>
+ <div class=st>Okey: <b>${CN[g.o.c]} ${g.o.n}</b> · ${st}${g.tl!=null&&!g.over?' · ⏱ <b id=cd></b>':''}</div><div class=tg>${groups||'<small>Açılan seriler burada görünecek</small>'}</div>${g.table.length?'<small>İşlemek için 1 taş seç, sonra gruba tıkla</small>':''}</div>`;
+ const acts=`<div class=row><button ${play&&sel.size>=2?'':'disabled'} onclick="pend.push([...sel]);sel.clear();draw()">Seçileni Grup Yap</button><button ${play&&pend.length?'':'disabled'} onclick="api('open',{gr:pend}).then(j=>{if(!j.err)pend=[];draw()})">Eli Aç (${pend.length} grup)</button><button ${pend.length?'':'disabled'} onclick="pend=[];draw()">Grupları Sıfırla</button><button ${play&&sel.size==1?'':'disabled'} onclick="api('discard',{tile:[...sel][0]})">Seçili Taşı At</button></div>`;
+ let h=top+`<div class=tbl>${pill(rel(2),'tp')}${pill(rel(3),'l')}${pill(rel(1),'r')}${slot(2,'tl','','')}${slot(1,'tr','','')}${slot(3,'bl',dr&&pv?'act':'',dr&&pv?"api('drawDisc')":'')}${slot(0,'br',play&&sel.size==1?'act':'',play?"sel.size==1&&api('discard',{tile:[...sel][0]})":'')}${center}
+ <div class=bz>${pill(me,'mine')}<div id=msg>${msg}</div>${acts}<div class=row style="flex-wrap:nowrap;gap:10px;align-items:center"><button class=dz onclick="arrange('cift')">▮▮<br>ÇİFT<br>DİZ</button><div class=rack>${rack}</div><button class=dz onclick="arrange('seri')">▮▮▮<br>SERİ<br>DİZ</button></div></div>${ov}</div>`+`<div class=box>${S.log.join('<br>')}</div>${chat()}`;
  A.innerHTML=h}
 function tg(id){if(pend.some(a=>a.includes(id)))return;sel.has(id)?sel.delete(id):sel.add(id);draw()}
 function addT(i){if(sel.size==1)api('add',{tile:[...sel][0],gi:i})}
