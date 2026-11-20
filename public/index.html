@@ -39,7 +39,7 @@ button{background:#f0b429;cursor:pointer;margin:2px}button:disabled{opacity:.4}
 .dz{width:62px;height:104px;background:#073a26;border:2px solid #1d6a49;border-radius:10px;color:#fff;font-weight:700;font-size:12px;line-height:1.2;padding:4px}
 .wrap{display:flex;gap:8px;align-items:flex-start}.wrap .tbl{flex:1;min-width:0}
 .side{flex:0 0 230px;height:clamp(640px,calc(100vh - 130px),780px);overflow:auto;margin:8px 0;box-sizing:border-box;font-size:13px}
-.lg{padding:4px 0;border-bottom:1px solid #ffffff18}.sd .t{outline:3px dashed #f0b429}
+.lg{padding:4px 0;border-bottom:1px solid #ffffff18}.sd .t{outline:3px dashed #f0b429}.isl .t{box-shadow:0 0 0 3px #4ade80,0 3px 4px #0005}
 .ov{position:absolute;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:5}
 </style></head><body><div id="A"></div>
 <script>
@@ -74,33 +74,46 @@ function opts(){const o=S.opts,ro=S.seat!=S.hostSeat||(S.g&&!S.g.over)?'disabled
  <select ${ro} onchange="setO()" id=o1><option value=0 ${o.pair?'':'selected'}>Tekli</option><option value=1 ${o.pair?'selected':''}>Eşli (0-2 ve 1-3)</option></select>
  <select ${ro} onchange="setO()" id=o2><option value=0 ${o.katla?'':'selected'}>Katlamasız</option><option value=1 ${o.katla?'selected':''}>Katlamalı</option></select>
  <select ${ro} onchange="setO()" id=o3><option value=1 ${o.ceza?'selected':''}>İşlek taş cezası: Açık (+101)</option><option value=0 ${o.ceza?'':'selected'}>İşlek taş cezası: Kapalı</option></select>
+ <select ${ro} onchange="setO()" id=o7>${[1,3,5,7].map(n=>`<option value=${n} ${o.hands==n?'selected':''}>${n} el</option>`).join('')}</select>
+ <select ${ro} onchange="setO()" id=o6><option value=1 ${o.help?'selected':''}>Yardımlı</option><option value=0 ${o.help?'':'selected'}>Yardımsız</option></select>
  <select ${ro} onchange="setO()" id=o4>${[0,1,2,3].map(n=>`<option value=${n} ${o.bots==n?'selected':''}>Bot: ${n}</option>`).join('')}</select>
  <select ${ro} onchange="setO()" id=o5>${[[0,'Süresiz'],[30,'30 sn'],[45,'45 sn'],[60,'60 sn']].map(([v,l])=>`<option value=${v} ${o.sure==v?'selected':''}>Hamle süresi: ${l}</option>`).join('')}</select></div></div>`}
-function setO(){api('opts',{o:{pair:+o1.value,katla:+o2.value,ceza:+o3.value,bots:+o4.value,sure:+o5.value}})}
+function setO(){api('opts',{o:{pair:+o1.value,katla:+o2.value,ceza:+o3.value,bots:+o4.value,sure:+o5.value,help:+o6.value,hands:+o7.value}})}
 function copy(){navigator.clipboard.writeText(location.href);msg='Link kopyalandı, arkadaşlarına gönder!';draw()}
 function score(){const s=S.scores,n=S.names;return S.opts.pair?`<b>Takım A</b> (${n[0]||'-'}+${n[2]||'-'}): ${s[0]+s[2]} &nbsp; <b>Takım B</b> (${n[1]||'-'}+${n[3]||'-'}): ${s[1]+s[3]}`:n.map((x,i)=>`${x||'-'}: <b>${s[i]}</b>`).join(' &nbsp; ')}
 function draw0(){
  if(!R)return home();if(!S)return A.innerHTML='Bağlanıyor…';if(S.err)return A.innerHTML=`<div class=box>${S.err}</div>`;
- const me=S.seat,g=S.g,top=`<div class=box><div class=row><input readonly size=36 value="${location.href}"><button onclick="copy()">Linki Kopyala</button><button onclick="snd=!snd;localStorage.s=+snd;draw()">${snd?'🔔 Ses açık':'🔕 Ses kapalı'}</button><span>${score()}</span></div></div>`;
+ const me=S.seat,g=S.g,top=`<div class=box><div class=row><input readonly size=36 value="${location.href}"><button onclick="copy()">Linki Kopyala</button><button onclick="snd=!snd;localStorage.s=+snd;draw()">${snd?'🔔 Ses açık':'🔕 Ses kapalı'}</button><span><b>El ${Math.min(S.hn+(S.g&&!S.g.over?1:0),S.opts.hands)}/${S.opts.hands}</b> · ${score()}</span></div></div>`;
  if(me<0){if(S.names.includes(null))return A.innerHTML=top+`<div class=box>Adın: <input id=nm value="${nm}"> <button onclick="nm=document.getElementById('nm').value||'Oyuncu';localStorage.n=nm;api('join',{name:nm})">Masaya Otur</button></div><div id=msg>${msg}</div>`;return A.innerHTML=top+'<div class=box>Masa dolu.</div>'}
  const lobby=`<div class=box><div class=row>${S.names.map((n,i)=>`<span class=box>${i+1}. ${dot(i)} ${n||'(boş)'}${i==S.hostSeat?' 👑':''}</span>`).join('')}</div></div>${opts()}${chat()}`;
  if(!g)return A.innerHTML=top+lobby+`<div class=row><button ${me==S.hostSeat&&!S.names.includes(null)?'':'disabled'} onclick="api('start')">Oyunu Başlat</button></div><div id=msg>${msg||(me==S.hostSeat?'4 oyuncu oturunca başlat.':'Kurucunun başlatması bekleniyor…')}</div>`;
- const my=g.turn==me&&!g.over,dr=my&&g.phase=='draw',play=my&&g.phase=='play',rel=k=>(me+k)%4,pv=g.disc[rel(3)],side=play&&g.side!=null;
+ const my=g.turn==me&&!g.over,dr=my&&g.phase=='draw',play=my&&g.phase=='play',rel=k=>(me+k)%4,pv=g.disc[rel(3)],side=play&&g.side!=null,fin=play&&sel.size==1&&g.hand.length==1;
  const pill=(i,c)=>`<div class="pl ${c} ${g.turn==i&&!g.over?'on':''}">${dot(i)} ${S.names[i]} · ${g.n[i]} taş${g.opened[i]?' ✅':''}</div>`;
  const slot=(k,c,x,oc)=>`<div class="sg ${c} ${x}" ${oc?`onclick="${oc}"`:''}><small>${S.names[rel(k)]}</small>${tl(g.disc[rel(k)])}</div>`;
  const rack=[0,14].map(r=>`<div class=rw>${slots.slice(r,r+14).map((id,k)=>{const i=r+k,t=id!=null&&g.hand.find(x=>x.id==id),p=pend.some(a=>a.includes(id));
-  return `<span class="sl ${sel.has(id)?'sel':''} ${p?'pg':''} ${my&&g.side!=null&&id==g.side?'sd':''}" ondragover="event.preventDefault()" ondrop="slots[drag]!=null&&([slots[drag],slots[${i}]]=[slots[${i}],slots[drag]]);draw()">${t?`<span draggable=true ondragstart="drag=${i}" onclick="tg(${id})">${tl(t)}</span>`:''}</span>`}).join('')}</div>`).join('');
+  return `<span class="sl ${sel.has(id)?'sel':''} ${p?'pg':''} ${my&&g.side!=null&&id==g.side?'sd':''} ${S.opts.help&&g.isl&&g.isl.includes(id)?'isl':''}" ondragover="event.preventDefault()" ondrop="dp(${i})">${t?`<span draggable=true ondragstart="drag=${i};dsh=event.shiftKey" onclick="tg(${id})" ondblclick="quick(${id})">${tl(t)}</span>`:''}</span>`}).join('')}</div>`).join('');
  const groups=g.table.map((x,i)=>`<span class=grp onclick="addT(${i})"><small>${S.names[x.o]}</small>${x.t.map(t=>tl(t)).join('')}</span>`).join('');
- const st=g.over?'El bitti':my?(dr?(g.noSide?'Sıra sende: desten taş çek':'Sıra sende: desten veya soldan taş çek'):side?'Yandan taş çektin: bu taşla el aç ya da geri bırak':'Sıra sende: aç, işle veya taş at'):'Sıra: '+S.names[g.turn];
- const ov=g.over?`<div class=ov><div class=box style="max-width:540px;text-align:center"><b>Sonuç:</b> ${g.over.w==null?'Berabere':S.names[g.over.w]+' bitirdi'}${g.over.dbl?' — OKEYLE bitti: çift açanların puanı 2 katı':''}<br>${S.names.map((n,i)=>n+': '+(g.over.d[i]>0?'+':'')+g.over.d[i]).join(' | ')}<br>${opts()}<button ${me==S.hostSeat?'':'disabled'} onclick="api('start')">Yeni El</button></div></div>`:'';
- const center=`<div class=ct><div class=row style="gap:26px;align-items:flex-end"><div class=cc>${tl(g.gos)}<small>Gösterge</small></div><div class=cc><div class="t back ${dr?'act':''}" ${dr?`onclick="api('drawDeck')"`:''}><b class=bd>${g.deck}</b></div><small>Deste</small></div></div>
+ const st=g.over?'El bitti':my?(dr?(g.noSide?'Sıra sende: desten taş çek':'Sıra sende: desten veya soldan taş çek'):side?'Soldan taş çektin: bu taşı aç/işle ya da geri bırak':'Sıra sende: aç, işle veya taş at'):'Sıra: '+S.names[g.turn];
+ const tot=S.opts.pair?[[0,2],[1,3]].map(t=>({n:t.map(i=>S.names[i]).join(' + '),p:t.reduce((a,i)=>a+S.scores[i],0)})):S.names.map((n,i)=>({n,p:S.scores[i]})),rank=[...tot].sort((a,b)=>a.p-b.p);
+ const ov=g.over?`<div class=ov><div class=box style="max-width:560px;text-align:center"><b>${S.final?'MAÇ BİTTİ':'El sonucu'}:</b> ${g.over.w==null?'Berabere':S.names[g.over.w]+' bitirdi'}${g.over.M>1?' — çarpan x'+g.over.M:''}<br>${S.names.map((n,i)=>n+': '+(g.over.d[i]>0?'+':'')+g.over.d[i]).join(' | ')}<br><br><b>Toplam:</b> ${rank.map((x,i)=>(i+1)+'. '+x.n+' ('+x.p+')').join(' &nbsp; ')}<br>${S.final?`<b>🏆 Kazanan: ${rank[0].n}</b><br>${opts()}<button ${me==S.hostSeat?'':'disabled'} onclick="api('newgame')">Yeni Oyun</button>`:`<small>Yeni el birkaç saniye içinde kendiliğinden başlar</small><br><button ${me==S.hostSeat?'':'disabled'} onclick="api('start')">Yeni Eli Şimdi Başlat</button>`}</div></div>`:'';
+ const center=`<div class=ct><div class=row style="gap:26px;align-items:flex-end"><div class=cc ${fin?`onclick="api('discard',{tile:[...sel][0]})"`:''}>${tl(g.gos,fin?'act':'')}<small>Gösterge</small></div><div class=cc><div class="t back ${dr?'act':''}" ${dr?`onclick="api('drawDeck')"`:''}><b class=bd>${g.deck}</b></div><small>Deste</small></div></div>
  <div class=st>Okey: <b>${CN[g.o.c]} ${g.o.n}</b> · ${st}${g.tl!=null&&!g.over?' · ⏱ <b id=cd></b>':''}</div><div class=tg>${groups||'<small>Açılan seriler burada görünecek</small>'}</div>${g.table.length?'<small>İşlemek için 1 taş seç, sonra gruba tıkla</small>':''}</div>`;
- const acts=`<div class=row><button ${play&&sel.size>=2?'':'disabled'} onclick="pend.push([...sel]);sel.clear();draw()">Seçileni Grup Yap</button><button ${play&&pend.length?'':'disabled'} onclick="api('open',{gr:pend}).then(j=>{if(!j.err)pend=[];draw()})">Eli Aç (${pend.length} grup)</button><button ${pend.length?'':'disabled'} onclick="pend=[];draw()">Grupları Sıfırla</button><button ${play&&sel.size==1?'':'disabled'} onclick="api('discard',{tile:[...sel][0]})">Seçili Taşı At</button><button ${side?'':'disabled'} onclick="api('undo')">Yandan Çektiğimi Geri Bırak</button></div>`;
+ const acts=`<div class=row><button ${play?'':'disabled'} onclick="openFrom('seri')">Seri Aç</button><button ${play?'':'disabled'} onclick="openFrom('cift')">Çift Aç</button><button ${play&&sel.size==2?'':'disabled'} onclick="addPair()">Çifti İşle</button><button ${play&&sel.size==1?'':'disabled'} onclick="api('discard',{tile:[...sel][0]})">Seçili Taşı At</button><button ${side?'':'disabled'} onclick="api('undo')">Soldan Çektiğimi Geri Bırak</button></div>`;
  let h=top+`<div class=wrap><div class="box side"><b>Olaylar</b>${S.log.slice().reverse().map(x=>`<div class=lg>${x}</div>`).join('')}</div><div class=tbl>${pill(rel(2),'tp')}${pill(rel(3),'l')}${pill(rel(1),'r')}${slot(2,'tl','','')}${slot(1,'tr','','')}${slot(3,'bl',dr&&pv&&!g.noSide?'act':'',dr&&pv&&!g.noSide?"api('drawDisc')":'')}${slot(0,'br',play&&sel.size==1?'act':'',play?"sel.size==1&&api('discard',{tile:[...sel][0]})":'')}${center}
  <div class=bz>${pill(me,'mine')}<div id=msg>${msg}</div>${acts}<div class=row style="flex-wrap:nowrap;gap:10px;align-items:center"><button class=dz onclick="arrange('cift')">▮▮<br>ÇİFT<br>DİZ</button><div class=rack>${rack}</div><button class=dz onclick="arrange('seri')">▮▮▮<br>SERİ<br>DİZ</button></div></div>${ov}</div></div>${chat()}`;
  A.innerHTML=h}
 function tg(id){if(pend.some(a=>a.includes(id)))return;sel.has(id)?sel.delete(id):sel.add(id);draw()}
+let dsh=0;function dp(i){if(drag==null||slots[drag]==null)return;
+ if(!dsh){[slots[drag],slots[i]]=[slots[i],slots[drag]];return draw()}
+ const r=drag<14?0:14;let a=drag,b=drag;while(a>r&&slots[a-1]!=null)a--;while(b<r+13&&slots[b+1]!=null)b++;
+ const blk=slots.slice(a,b+1),r2=i<14?0:14;if(i+blk.length>r2+14){msg='Blok buraya sığmıyor';return draw()}
+ for(let k=a;k<=b;k++)slots[k]=null;if(blk.some((_,k)=>slots[i+k]!=null)){for(let k=a;k<=b;k++)slots[k]=blk[k-a];msg='Blok boş yere bırakılmalı';return draw()}
+ blk.forEach((x,k)=>slots[i+k]=x);draw()}
 function addT(i){if(sel.size==1)api('add',{tile:[...sel][0],gi:i})}
+function openFrom(k){const gr=[];for(const r of[0,14]){let c=[];for(let j=0;j<=14;j++){const id=j<14?slots[r+j]:null;if(id!=null)c.push(id);else{if(k=='seri'?c.length>=3:c.length==2)gr.push(c);c=[]}}}
+ if(!gr.length){msg=k=='seri'?'Istakada açılacak seri/per yok. "Seri Diz"e bas veya taşları aralarında boşluk bırakarak grupla.':'Istakada açılacak çift yok. "Çift Diz"e bas.';return draw()}api('open',{gr,k}).then(()=>draw())}
+function addPair(){api('addPair',{tiles:[...sel]})}
+function quick(id){api('add',{tile:id,gi:-1})}
 const dot=i=>S.names[i]?(S.on[i]?'🟢':'🔴'):'',esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const chat=()=>`<div class=box><div id=cb style="max-height:110px;overflow:auto">${S.chat.map(c=>`<div><b>${esc(c.n)}:</b> ${esc(c.m)}</div>`).join('')}</div><input id=ci placeholder="Mesaj yaz, Enter ile gönder" style="width:65%" onkeydown="if(event.key=='Enter')sc()"> <button onclick="sc()">Gönder</button></div>`;
 function sc(){const i=document.getElementById('ci');if(i.value.trim()){fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({t:'chat',r:R,p:P,m:i.value})});i.value=''}}
